@@ -10,7 +10,8 @@
         android:id="@+id/hollywood"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hollywood"
+        android:text="@string/hollywood"
+        android:layout_centerHorizontal="true"
         android:textSize="40sp" />
 
     <com.hemanth.hollywood.MyKeyboard

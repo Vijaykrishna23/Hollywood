@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.apmem.tools.layouts.FlowLayout;
 
@@ -27,12 +28,11 @@ public class PlayActivity extends AppCompatActivity implements DialogInterface.O
     String currentMovie;
     FlowLayout flowLayout;
     TextView hollyWoodTextView;
-    char[] hollyWood;
-    int hollyWoodLength, lengthOfCurrentMovie;
-    int dummyIndividualCharacterListLength;
+    int lengthOfCurrentMovie;
     Drawable buttonRed, buttonGreen;
     AlertDialog.Builder builder;
-
+    Stack<Integer> dummyStack;
+    Stack<Character> hollyWoodStack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +44,7 @@ public class PlayActivity extends AppCompatActivity implements DialogInterface.O
         Scanner scanner;
 
         init();
+
 
 
         scanner = new Scanner(getResources().openRawResource(R.raw.movies));
@@ -62,11 +63,12 @@ public class PlayActivity extends AppCompatActivity implements DialogInterface.O
 
         for (int i = 0; i < lengthOfCurrentMovie; i++) {
             TextView textView = new TextView(this);
+            textView.setText(String.valueOf(currentMovie.charAt(i)));
 
-            if (Character.isLetter(currentMovie.charAt(i))) {
+            if (Character.isLetter(currentMovie.charAt(i)) || Character.isDigit(currentMovie.charAt(i))) {
                 textView.setText("_");
                 textView.setBackground(getDrawable(R.drawable.button_green));
-                dummyIndividualCharacterListLength++;
+                dummyStack.push(i);
             }
 
             textView.setPadding(10, 10, 10, 10);
@@ -82,15 +84,19 @@ public class PlayActivity extends AppCompatActivity implements DialogInterface.O
         individualCharacterList = new ArrayList<>();
         flowLayout = findViewById(R.id.flow);
         hollyWoodTextView = findViewById(R.id.hollywood);
-        hollyWood = hollyWoodTextView.getText().toString().toCharArray();
-        hollyWoodLength = hollyWood.length;
         buttonRed = getDrawable(R.drawable.button_red);
         buttonGreen = getDrawable(R.drawable.button_green);
         builder = new AlertDialog.Builder(this);
         builder.setTitle("Hollywood")
                 .setPositiveButton("PLAY AGAIN", this)
-                .setNegativeButton("CANCEL",this);
+                .setNegativeButton("CANCEL", this);
 
+        dummyStack = new Stack<>();
+        hollyWoodStack = new Stack<>();
+
+        for (char letter : "Hollywood".toCharArray()) {
+            hollyWoodStack.push(letter);
+        }
 
 
     }
@@ -105,13 +111,13 @@ public class PlayActivity extends AppCompatActivity implements DialogInterface.O
         if (view.getTag().equals("0")) {
             String pressedLetter = ((Button) view).getText().toString();
             if (currentMovie.contains(pressedLetter)) {
-                changeTagBackgroundFor(view, "1", buttonGreen);
+                changeTagBackgroundColorFor(view, "1", buttonGreen, Color.BLACK);
 
                 for (int i = 0; i < lengthOfCurrentMovie; i++) {
                     if (pressedLetter.equals(String.valueOf(currentMovie.charAt(i)))) {
                         individualCharacterList.get(i).setText(pressedLetter);
-                        dummyIndividualCharacterListLength--;
-                        logText(dummyIndividualCharacterListLength + "");
+                        dummyStack.pop();
+                        //logText(dummyIndividualCharacterListLength + "");
                         if (checkWinner()) {
                             showDialog("YOU WON");
                         }
@@ -119,36 +125,40 @@ public class PlayActivity extends AppCompatActivity implements DialogInterface.O
                 }
 
             } else {
-                changeTagBackgroundFor(view, "-1", buttonRed);
-                hollyWoodLength--;
+                changeTagBackgroundColorFor(view, "-1", buttonRed,Color.WHITE);
+                hollyWoodStack.pop();
                 if (checkGameOver()) {
-                    hollyWoodTextView.setText(hollyWood, 0, 0);
                     showDialog("YOU LOSE");
-                } else {
-                    hollyWoodTextView.setText(hollyWood, 0, hollyWoodLength);
                 }
+                hollyWoodTextView.setText(stackToString());
+
             }
+        }
+        else if(view.getTag().equals("1")) {
+            Toast.makeText(this,"Already Pressed!",Toast.LENGTH_SHORT).show();
+        }
+        else {
+            Toast.makeText(this,"Already Pressed!",Toast.LENGTH_SHORT).show();
         }
     }
 
-    public void changeTagBackgroundFor(View view, String tag, Drawable buttonColor) {
+    public void changeTagBackgroundColorFor(View view, String tag, Drawable buttonColor,int textColor) {
         view.setTag(tag);
-        ((Button) view).setTextColor(Color.WHITE);
+        ((Button) view).setTextColor(textColor);
         view.setBackground(buttonColor);
 
     }
 
     public boolean checkGameOver() {
-        return hollyWoodLength < 1;
+        return hollyWoodStack.empty();
     }
 
     public boolean checkWinner() {
-        return dummyIndividualCharacterListLength < 1;
+        return dummyStack.empty();
     }
 
     public void showDialog(String message) {
-        builder.setMessage(message).show();
-
+        builder.setMessage(message).show().setCanceledOnTouchOutside(false);
     }
 
 
@@ -160,16 +170,25 @@ public class PlayActivity extends AppCompatActivity implements DialogInterface.O
     }
 
     public void logText(String message) {
-        Log.d("vj",message);
+        Log.d("vj", message);
     }
+
+
+    public String stackToString() {
+        StringBuilder string = new StringBuilder();
+        for (char letter : hollyWoodStack) {
+            string.append(letter);
+        }
+        return String.valueOf(string);
+    }
+
 
     @Override
     public void onClick(DialogInterface dialog, int which) {
         //logText("which=" + which);
-        if(which == DialogInterface.BUTTON_POSITIVE) {
+        if (which == DialogInterface.BUTTON_POSITIVE) {
             startActivity(new Intent(PlayActivity.this, PlayActivity.class));
-        }
-        else {
+        } else {
             startActivity(new Intent(PlayActivity.this, MainActivity.class));
         }
 
