@@ -1,6 +1,5 @@
 package com.hemanth.hollywood;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -16,61 +15,60 @@ import android.widget.Toast;
 import org.apmem.tools.layouts.FlowLayout;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Stack;
 
 import static android.support.annotation.Dimension.SP;
 
-public class PlayActivity extends AppCompatActivity implements DialogInterface.OnClickListener {
+public class PlayActivity extends AppCompatActivity{
 
-    ArrayList<String> movies;
-    ArrayList<TextView> individualCharacterList;
-    String currentMovie;
-    FlowLayout flowLayout;
+    // the empty boxes
+    FlowLayout boxesLayout;
+
+    // HollyWood Text
     TextView hollyWoodTextView;
+
+    // BackGroundButtons for the keys in keyboard
+    Drawable redBackGroundButton, greenBackGroundButton;
+
+    // List of the boxes displayed and the spaces where boxes are not displayed
+    List<TextView> allBoxesList;
+
+    String currentMovie;
     int lengthOfCurrentMovie;
-    Drawable buttonRed, buttonGreen;
-    AlertDialog.Builder builder;
-    Stack<Integer> dummyStack;
-    Stack<Character> hollyWoodStack;
+
+    // same as allBoxesList but contains dummy values for the size.
+    Stack<Integer> individualCharactersStack;
+
+    // contains the string 'HollyWood'
+    Stack<Character> hollyWoodTextStack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play);
 
-        MyKeyboard keyboard = findViewById(R.id.keyboard);
-        int random;
-        Scanner scanner;
+        initVariables();
 
-        init();
-
-
-
-        scanner = new Scanner(getResources().openRawResource(R.raw.movies));
-        while (scanner.hasNext()) {
-            String movie = scanner.nextLine();
-            movies.add(movie.toUpperCase());
-        }
-        scanner.close();
-
-
-        random = (int) (Math.random() * movies.size());
-
-        currentMovie = movies.get(random);
+        currentMovie = getRandomMovieFromMoviesFile();
         lengthOfCurrentMovie = currentMovie.length();
 
-
+        // displaying empty boxes
         for (int i = 0; i < lengthOfCurrentMovie; i++) {
+
+            // creating new box
             TextView textView = new TextView(this);
             textView.setText(String.valueOf(currentMovie.charAt(i)));
 
+            // displays a-z and 0-9 as _ | rest are displayed as the same
             if (Character.isLetter(currentMovie.charAt(i)) || Character.isDigit(currentMovie.charAt(i))) {
                 textView.setText("_");
                 textView.setBackground(getDrawable(R.drawable.button_green));
-                dummyStack.push(i);
+                individualCharactersStack.push(i);
             }
 
+            // for ui
             textView.setPadding(10, 10, 10, 10);
             textView.setTextSize(SP, 20);
 
@@ -79,119 +77,177 @@ public class PlayActivity extends AppCompatActivity implements DialogInterface.O
 
     }
 
-    public void init() {
-        movies = new ArrayList<>();
-        individualCharacterList = new ArrayList<>();
-        flowLayout = findViewById(R.id.flow);
+    /**
+     * Method to initialize the class-level variables.
+     */
+
+    public void initVariables() {
+
+        boxesLayout = findViewById(R.id.flow);
         hollyWoodTextView = findViewById(R.id.hollywood);
-        buttonRed = getDrawable(R.drawable.button_red);
-        buttonGreen = getDrawable(R.drawable.button_green);
-        builder = new AlertDialog.Builder(this);
-        builder.setTitle("Hollywood")
-                .setPositiveButton("PLAY AGAIN", this)
-                .setNegativeButton("CANCEL", this);
+        redBackGroundButton = getDrawable(R.drawable.button_red);
+        greenBackGroundButton = getDrawable(R.drawable.button_green);
 
-        dummyStack = new Stack<>();
-        hollyWoodStack = new Stack<>();
+        allBoxesList = new ArrayList<>();
 
+        individualCharactersStack = new Stack<>();
+        hollyWoodTextStack = new Stack<>();
+
+        // populating hollywood stack
         for (char letter : "Hollywood".toCharArray()) {
-            hollyWoodStack.push(letter);
+            hollyWoodTextStack.push(letter);
         }
 
 
     }
 
-    public void addTextViewToLayout(TextView textView) {
-        flowLayout.addView(textView);
-        individualCharacterList.add(textView);
+    /**
+     *  Opens the movies.txt file and converts to list and returns a random movie.
+     */
+    public String getRandomMovieFromMoviesFile() {
+        List<String> movies = new ArrayList<>();
+
+        Scanner scanner = new Scanner(getResources().openRawResource(R.raw.movies));
+
+        while (scanner.hasNext()) {
+            String movie = scanner.nextLine();
+            movies.add(movie.toUpperCase());
+        }
+
+        scanner.close();
+
+        int randomIndex = (int) (Math.random() * movies.size());
+
+        return movies.get(randomIndex);
     }
 
+    /**
+     * Given a textview, it adds to the end of the boxes.
+     * It also adds the textview to allBoxes list.
+     */
+    public void addTextViewToLayout(TextView textView) {
+        boxesLayout.addView(textView);
+        allBoxesList.add(textView);
+    }
 
+    /**
+     * This function gets executed when any key on custom keyboard is pressed.
+     * Handles changing of the background of the key and ending the game if the user wins or loses.
+     */
     public void onKeyPressed(View view) {
+
+        // tag = 0 | not pressed yet
         if (view.getTag().equals("0")) {
+
             String pressedLetter = ((Button) view).getText().toString();
+
+            // letter is in the movie
             if (currentMovie.contains(pressedLetter)) {
-                changeTagBackgroundColorFor(view, "1", buttonGreen, Color.BLACK);
+
+                // tag = 1 | correct answer
+                changeTagAndBackgroundColor(view, "1", greenBackGroundButton, Color.BLACK);
 
                 for (int i = 0; i < lengthOfCurrentMovie; i++) {
+
                     if (pressedLetter.equals(String.valueOf(currentMovie.charAt(i)))) {
-                        individualCharacterList.get(i).setText(pressedLetter);
-                        dummyStack.pop();
-                        //logText(dummyIndividualCharacterListLength + "");
-                        if (checkWinner()) {
+
+                        allBoxesList.get(i).setText(pressedLetter);
+                        individualCharactersStack.pop();
+
+                        if (isWinner()) {
                             showDialog("YOU WON");
                         }
                     }
                 }
 
             } else {
-                changeTagBackgroundColorFor(view, "-1", buttonRed,Color.WHITE);
-                hollyWoodStack.pop();
-                if (checkGameOver()) {
+
+                // tag = -1 | wrong answer
+                changeTagAndBackgroundColor(view, "-1", redBackGroundButton,Color.WHITE);
+
+                hollyWoodTextStack.pop();
+
+                if (isGameOver()) {
                     showDialog("YOU LOSE");
                 }
                 hollyWoodTextView.setText(stackToString());
 
             }
         }
-        else if(view.getTag().equals("1")) {
-            Toast.makeText(this,"Already Pressed!",Toast.LENGTH_SHORT).show();
-        }
         else {
             Toast.makeText(this,"Already Pressed!",Toast.LENGTH_SHORT).show();
         }
     }
 
-    public void changeTagBackgroundColorFor(View view, String tag, Drawable buttonColor,int textColor) {
+    /**
+     * Given the view , tag, backGroundColor, and textColor
+     * the view is modified according to the parameters.
+     * Used when onKeyPressed.
+     */
+    public void changeTagAndBackgroundColor(View view, String tag, Drawable buttonColor, int textColor) {
         view.setTag(tag);
         ((Button) view).setTextColor(textColor);
         view.setBackground(buttonColor);
 
     }
 
-    public boolean checkGameOver() {
-        return hollyWoodStack.empty();
+    /**
+     * Utility Function to check if game is over i.e. user loses.
+     */
+    public boolean isGameOver() {
+        return hollyWoodTextStack.empty();
     }
 
-    public boolean checkWinner() {
-        return dummyStack.empty();
+    /**
+     * Utility Function to check if game is won i.e. user wins.
+     */
+    public boolean isWinner() {
+        return individualCharactersStack.empty();
     }
 
+    /**
+     * Given a message, opens a dialog with choices of 'PLAY AGAIN'
+     * and 'CANCEL'. This is used when user wins or loses the game.
+     */
     public void showDialog(String message) {
-        builder.setMessage(message).show().setCanceledOnTouchOutside(false);
+         new AlertDialog.Builder(this)
+                .setTitle("Hollywood")
+                .setPositiveButton("PLAY AGAIN", (dialog, which) -> {
+                    startActivity(new Intent(PlayActivity.this, PlayActivity.class));
+                    finish();
+                })
+                .setNegativeButton("CANCEL", (dialog, which) -> {
+                    startActivity(new Intent(PlayActivity.this, PlayActivity.class));
+                    finish();
+                })
+                .setMessage(message)
+                .show()
+                .setCanceledOnTouchOutside(false);
     }
 
 
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        startActivity(new Intent(PlayActivity.this, MainActivity.class));
-
+        finish();
     }
 
     public void logText(String message) {
-        Log.d("vj", message);
+        Log.d("playactivity", message);
     }
 
-
+    /**
+     * Takes the stack of characters and converts to string.
+     * Used to display the text HollyWood.
+     */
     public String stackToString() {
+
         StringBuilder string = new StringBuilder();
-        for (char letter : hollyWoodStack) {
+        for (char letter : hollyWoodTextStack) {
             string.append(letter);
         }
         return String.valueOf(string);
     }
 
 
-    @Override
-    public void onClick(DialogInterface dialog, int which) {
-        //logText("which=" + which);
-        if (which == DialogInterface.BUTTON_POSITIVE) {
-            startActivity(new Intent(PlayActivity.this, PlayActivity.class));
-        } else {
-            startActivity(new Intent(PlayActivity.this, MainActivity.class));
-        }
-
-
-    }
 }
