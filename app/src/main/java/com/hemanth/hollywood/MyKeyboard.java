@@ -9,9 +9,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
 
+/**
+ * Class file for keyboard.xml
+ * Used for UI. attachToRoot is set to true
+ */
 public class MyKeyboard extends LinearLayout {
-
-
 
     public MyKeyboard(Context context) {
         this(context,null,0);
@@ -26,9 +28,5 @@ public class MyKeyboard extends LinearLayout {
         LayoutInflater.from(context).inflate(R.layout.keyboard,this,true);
 
     }
-
-
-
-
 
 }
